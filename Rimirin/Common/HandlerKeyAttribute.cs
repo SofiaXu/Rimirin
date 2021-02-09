@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Rimirin.Common
 {
@@ -13,6 +9,7 @@ namespace Rimirin.Common
     public class HandlerKeyAttribute : Attribute
     {
         public string Keyword { get; }
+
         /// <summary>
         /// 本特性用于消息关键字，使用正则表达式来识别文中关键字
         /// </summary>

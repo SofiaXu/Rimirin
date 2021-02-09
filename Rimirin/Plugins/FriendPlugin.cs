@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Rimirin.Plugins
@@ -15,6 +15,7 @@ namespace Rimirin.Plugins
     public class FriendPlugin : IPlugin, IFriendMessage
     {
         private readonly Dictionary<string, IFriendMessageHandler> handlers = new Dictionary<string, IFriendMessageHandler>();
+
         public FriendPlugin(IServiceProvider serviceProvider)
         {
             var plugins = Assembly.GetExecutingAssembly().DefinedTypes.Where(ti => ti.GetInterface("IFriendMessageHandler") != null).ToArray();
@@ -26,10 +27,11 @@ namespace Rimirin.Plugins
                 }
             }
         }
+
         public Task<bool> FriendMessage(MiraiHttpSession session, IFriendMessageEventArgs e)
         {
             var text = e.Chain.FirstOrDefault(m => m.Type == "Plain").ToString();
-            handlers.Where(h => h.Key == text).ToList().ForEach(h => h.Value.DoHandle(session, e.Chain, e.Sender));
+            handlers.Where(h => Regex.IsMatch(text, h.Key)).ToList().ForEach(h => h.Value.DoHandleAsync(session, e.Chain, e.Sender, false));
             return new Task<bool>(() => false);
         }
     }

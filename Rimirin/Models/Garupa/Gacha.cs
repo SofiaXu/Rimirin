@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Rimirin.Models.Garupa
 {
-    class Gacha
+    public class Gacha
     {
         public string ResourceName { get; set; }
         public string BannerAssetBundleName { get; set; }

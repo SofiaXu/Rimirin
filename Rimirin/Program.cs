@@ -4,10 +4,6 @@ using Mirai_CSharp;
 using Rimirin.Common;
 using Rimirin.Garupa;
 using Rimirin.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Rimirin
 {

@@ -1,10 +1,5 @@
 ﻿using Mirai_CSharp;
 using Mirai_CSharp.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Rimirin.Common
 {
@@ -14,6 +9,7 @@ namespace Rimirin.Common
     public interface IHandler
     {
     }
+
     /// <summary>
     /// 消息处理器
     /// </summary>
@@ -25,14 +21,32 @@ namespace Rimirin.Common
         /// <param name="session">mirai连接</param>
         /// <param name="chain">消息链</param>
         /// <param name="info">发送者信息</param>
-        void DoHandle(MiraiHttpSession session, IMessageBase[] chain, IBaseInfo info);
+        /// <param name="isGroupMessage">是群消息</param>
+        void DoHandleAsync(MiraiHttpSession session, IMessageBase[] chain, IBaseInfo info, bool isGroupMessage = true);
     }
+
+    /// <summary>
+    /// 时间消息处理器
+    /// </summary>
+    public interface ITimeMessageHandler : IHandler
+    {
+        /// <summary>
+        /// 对发送来的消息链进行处理
+        /// </summary>
+        /// <param name="session">mirai连接</param>
+        /// <param name="chain">消息链</param>
+        /// <param name="info">发送者信息</param>
+        /// <param name="isGroupMessage">是群消息</param>
+        void DoTimeHandleAsync(MiraiHttpSession session, IMessageBase[] chain, IBaseInfo info, bool isGroupMessage = true);
+    }
+
     /// <summary>
     /// 群消息处理器
     /// </summary>
     public interface IGroupMessageHandler : IMessageHandler
     {
     }
+
     /// <summary>
     /// 好友消息处理器
     /// </summary>
