@@ -15,7 +15,7 @@ namespace Rimirin.Handlers
     [HandlerKey("^十连$")]
     [HandlerKey("^单抽$")]
     [HandlerKey("^当期池子$")]
-    public class GachaHandler : IHandler, IMessageHandler, IGroupMessageHandler, IFriendMessageHandler
+    public class GachaHandler : IHandler, IMessageHandler, IGroupMessageHandler
     {
         private readonly GarupaData data;
         private readonly BestdoriClient client;
@@ -60,7 +60,7 @@ namespace Rimirin.Handlers
                     sb.AppendLine(gd.GachaName[0]);
                     sb.AppendLine(gd.Information.NewMemberInfo[0]);
                     sb.AppendLine($"{startTime} - {endTime}");
-                    var img = await session.UploadPictureAsync(UploadTarget.Friend, await client.GetGachaBannerImagePath(gd.BannerAssetBundleName));
+                    var img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetGachaBannerImagePath(gd.BannerAssetBundleName));
                     result = new IMessageBase[]
                     {
                         new PlainMessage(sb.ToString()),
@@ -69,7 +69,7 @@ namespace Rimirin.Handlers
                     logger.LogInformation(sb.ToString());
                     break;
                 case "十连":
-                    List<Card> cards = new List<Card>();
+                    List<Card> cards = new List<Card>(11);
                     for (int i = 0; i < 9; i++)
                     {
                         cards.Add(await GachaSingle());
@@ -91,7 +91,7 @@ namespace Rimirin.Handlers
             }
             if (isGroupMessage)
             {
-                await session.SendGroupMessageAsync(info.Id, result);
+                await session.SendGroupMessageAsync(((IGroupMemberInfo)info).Group.Id, result);
             }
             else
             {
@@ -107,19 +107,44 @@ namespace Rimirin.Handlers
                 gd = data.RecentGachaDetails.Last().Value;
             }
             var cards = gd.Details[0].ToList();
-            double sumRate = cards.Sum(c => c.Value.Weight);
-            List<double> sorted = new List<double>();
+            var rates = gd.Rates[0].ToList();
+            // 1. 选择稀有度
+            double sumRate = rates.Sum(c => c.Value.Rate);
             double tempRate = 0;
-            if (tenTimes == true)
-            {
-                cards = cards.Where(k => k.Value.RarityIndex > 2).ToList();
-            }
-            cards = cards.OrderByDescending(k => k.Value.RarityIndex).ThenByDescending(k => k.Value.Weight).ToList();
-            cards.ForEach(om => { tempRate += om.Value.Weight; sorted.Add(tempRate / sumRate); });
+            List<double> sorted = new List<double>();
+            rates.ForEach(r => { tempRate += r.Value.Rate; sorted.Add(tempRate / sumRate); });
             double next = randomer.NextDouble();
             sorted.Add(next);
             sorted.Sort();
-            return data.Cards[cards[sorted.IndexOf(next)].Key];
+            var rate = int.Parse(rates[sorted.IndexOf(next)].Key);
+            // 2. 十连三星保底
+            if (tenTimes == true && rate == 2)
+            {
+                rate = 3;
+            }
+            // 3. 取出相应卡组
+            cards = cards.Where(c => c.Value.RarityIndex == rate).ToList();
+            sorted.Clear();
+            tempRate = 0;
+            sumRate = 0;
+            // 4. 大于三星时选择概率提升卡组
+            if (rate > 3)
+            {
+                var pickups = cards.GroupBy(k => k.Value.Pickup).Select(g => new KeyValuePair<bool, double>(g.Key, g.Sum(k => k.Value.Weight))).ToList();
+                sumRate = pickups.Sum(k => k.Value);
+                pickups.ForEach(p => { tempRate += p.Value; sorted.Add(tempRate / sumRate); });
+                next = randomer.NextDouble();
+                sorted.Add(next);
+                sorted.Sort();
+                var pickup = pickups[sorted.IndexOf(next)].Key;
+                cards = cards.Where(k => k.Value.Pickup == pickup).ToList();
+                sorted.Clear();
+                tempRate = 0;
+                sumRate = 0;
+            }
+            // 5. 取出卡片
+            int nextIndex = randomer.Next(0, cards.Count - 1);
+            return data.Cards[cards[nextIndex].Key];
         }
 
         private GachaDetail GetRecentGachaDetail()

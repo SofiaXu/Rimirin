@@ -8,7 +8,7 @@ using System;
 namespace Rimirin.Handlers
 {
     [HandlerKey("^最新活动$")]
-    public class GarupaEventHandler : IHandler, IMessageHandler, IGroupMessageHandler, IFriendMessageHandler, ITimeMessageHandler
+    public class GarupaEventHandler : IHandler, IMessageHandler, IGroupMessageHandler
     {
         private readonly GarupaData data;
         private readonly BestdoriClient client;
@@ -34,7 +34,10 @@ namespace Rimirin.Handlers
             {
                 latestEventId = int.Parse(latestEvent.Item1);
                 isEventChanged = true;
-                img = await session.UploadPictureAsync(UploadTarget.Friend, await client.GetEventBannerImagePath(latestEvent.Item1));
+                if (isGroupMessage)
+                    img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetEventBannerImagePath(latestEvent.Item1));
+                else
+                    img = await session.UploadPictureAsync(UploadTarget.Friend, await client.GetEventBannerImagePath(latestEvent.Item1));
                 DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(latestEvent.Item2.EndAt[0])).LocalDateTime;
                 DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(latestEvent.Item2.StartAt[0])).LocalDateTime;
                 string eventState = startTime <= DateTime.Now ? $"即将开始，剩余{startTime - DateTime.Now:d\\日h\\小\\时m\\分}" : endTime <= DateTime.Now ? "结束" : $"正在进行，剩余{endTime - DateTime.Now:d\\日h\\小\\时m\\分}";
@@ -48,38 +51,11 @@ namespace Rimirin.Handlers
             };
             if (isGroupMessage)
             {
-                await session.SendGroupMessageAsync(info.Id, result);
+                await session.SendGroupMessageAsync(((IGroupMemberInfo)info).Group.Id, result);
             }
             else
             {
                 await session.SendFriendMessageAsync(info.Id, result);
-            }
-        }
-
-        public async void DoTimeHandleAsync(MiraiHttpSession session, IMessageBase[] chain, IBaseInfo info, bool isGroupMessage = true)
-        {
-            var latestEvent = data.GetLatestEvent();
-            if (int.Parse(latestEvent.Item1) == latestEventId)
-            {
-                logger.LogInformation("最新活动未更新");
-                return;
-            }
-            
-            if (isGroupMessage)
-            {
-                var groups = await session.GetGroupListAsync();
-                foreach (var item in groups)
-                {
-                    DoHandleAsync(session, chain, item);
-                }
-            }
-            else
-            {
-                var groups = await session.GetFriendListAsync();
-                foreach (var item in groups)
-                {
-                    DoHandleAsync(session, chain, item);
-                }
             }
         }
     }

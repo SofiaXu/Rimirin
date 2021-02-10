@@ -30,7 +30,11 @@ namespace Rimirin.Plugins
 
         public Task<bool> GroupMessage(MiraiHttpSession session, IGroupMessageEventArgs e)
         {
-            var text = e.Chain.FirstOrDefault(m => m.Type == "Plain").ToString();
+            var text = e.Chain.FirstOrDefault(m => m.Type == "Plain")?.ToString();
+            if (text == null)
+            {
+                return new Task<bool>(() => false);
+            }
             handlers.Where(h => Regex.IsMatch(text, h.Key)).ToList().ForEach(h => h.Value.DoHandleAsync(session, e.Chain, e.Sender));
             return new Task<bool>(() => false);
         }
