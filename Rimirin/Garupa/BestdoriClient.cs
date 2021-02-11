@@ -336,6 +336,48 @@ namespace Rimirin.Garupa
             return $"Resources\\Garupa\\GachaBanners\\{resourceId}.png";
         }
 
+        /// <summary>
+        /// 下载卡片缩略图
+        /// </summary>
+        /// <param name="resourceId">卡片资源Id</param>
+        /// <param name="cardId">卡片Id</param>
+        /// <param name="isNormal">是否为普通卡面，默认普卡</param>
+        /// <returns>成功则为<c>true</c>，否则为<c>false</c></returns>
+        private async Task<bool> DownloadCardThumb(string resourceId, string cardId, bool isNormal = true)
+        {
+            var response = await httpClient.GetAsync(AssetsBaseUrl + $"jp/thumb/chara/card{Math.Floor(int.Parse(cardId) / 50d):00000}_rip/{resourceId}_{(isNormal ? "normal" : "after_training")}.png");
+            if (response.IsSuccessStatusCode)
+            {
+                EnsureDirectoryExists("Resources\\Garupa\\Card\\Thumb");
+                using FileStream file = new FileStream($"Resources\\Garupa\\Card\\Thumb\\Card{Math.Floor(int.Parse(cardId) / 50d):00000}_{resourceId}_{(isNormal ? "normal" : "after_training")}.png", FileMode.Create);
+                await response.Content.CopyToAsync(file);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 获取卡片缩略图路径
+        /// </summary>
+        /// <param name="resourceId">卡池Id</param>
+        /// <param name="cardId">卡片Id</param>
+        /// <param name="isNormal">是否为普通卡面，默认普卡</param>
+        /// <param name="update">是否通过网络更新</param>
+        /// <returns>本地磁盘相对路径</returns>
+        public async Task<string> GetCardThumbPath(string resourceId, string cardId, bool isNormal = true, bool update = false)
+        {
+            if (update || !File.Exists($"Resources\\Garupa\\Card\\Thumb\\Card{Math.Floor(int.Parse(cardId) / 50d):00000}_{resourceId}_{(isNormal ? "normal" : "after_training")}.png"))
+            {
+                var result = await DownloadCardThumb(resourceId, cardId, isNormal);
+                if (!result)
+                {
+                    throw new Exception("Cannot get event banner");
+                }
+            }
+
+            return $"Resources\\Garupa\\Card\\Thumb\\Card{Math.Floor(int.Parse(cardId) / 50d):00000}_{resourceId}_{(isNormal ? "normal" : "after_training")}.png";
+        }
+
         private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)

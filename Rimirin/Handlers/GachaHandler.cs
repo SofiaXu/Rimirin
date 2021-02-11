@@ -23,8 +23,9 @@ namespace Rimirin.Handlers
         private readonly Dictionary<int, string> stars;
         private readonly StringBuilder sb = new StringBuilder();
         private readonly ILogger<GachaHandler> logger;
+        private readonly GachaImageRender render;
 
-        public GachaHandler(GarupaData data, BestdoriClient client, ILogger<GachaHandler> logger)
+        public GachaHandler(GarupaData data, BestdoriClient client, ILogger<GachaHandler> logger, GachaImageRender render)
         {
             this.data = data;
             this.client = client;
@@ -36,20 +37,24 @@ namespace Rimirin.Handlers
                 { 4, "★4" }
             };
             this.logger = logger;
+            this.render = render;
         }
         public async void DoHandleAsync(MiraiHttpSession session, IMessageBase[] chain, IBaseInfo info, bool isGroupMessage = true)
         {
-            IMessageBase[] result = null;
+            List<IMessageBase> result = null;
+            IMessageBase img = null;
             sb.Clear();
             switch (chain.First(m => m.Type == "Plain").ToString())
             {
                 case "单抽":
                     logger.LogInformation($"{info.Name} 单抽");
                     var card = await GachaSingle();
-                    var message = $"单抽结果: {stars[card.Rarity]} {data.Characters[card.CharacterId.ToString()].CharacterName[0]} - {card.Prefix[0]}";
-                    result = new IMessageBase[]
+                    var message = $"单抽结果: {stars[card.Item2.Rarity]} {data.Characters[card.Item2.CharacterId.ToString()].CharacterName[0]} - {card.Item2.Prefix[0]}";
+                    img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetCardThumbPath(card.Item2.ResourceSetName, card.Item1));
+                    result = new List<IMessageBase>
                     {
-                        new PlainMessage(message)
+                        new PlainMessage(message),
+                        img
                     };
                     logger.LogInformation(message);
                     break;
@@ -60,8 +65,8 @@ namespace Rimirin.Handlers
                     sb.AppendLine(gd.GachaName[0]);
                     sb.AppendLine(gd.Information.NewMemberInfo[0]);
                     sb.AppendLine($"{startTime} - {endTime}");
-                    var img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetGachaBannerImagePath(gd.BannerAssetBundleName));
-                    result = new IMessageBase[]
+                    img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetGachaBannerImagePath(gd.BannerAssetBundleName));
+                    result = new List<IMessageBase>
                     {
                         new PlainMessage(sb.ToString()),
                         img
@@ -69,20 +74,22 @@ namespace Rimirin.Handlers
                     logger.LogInformation(sb.ToString());
                     break;
                 case "十连":
-                    List<Card> cards = new List<Card>(11);
+                    List<(string, Card)> cards = new List<(string, Card)>(11);
                     for (int i = 0; i < 9; i++)
                     {
                         cards.Add(await GachaSingle());
                     }
                     cards.Add(await GachaSingle(tenTimes: true));
+                    img = await session.UploadPictureAsync(UploadTarget.Group, await render.RenderGachaImageAsync(cards));
                     sb.AppendLine("十连结果:");
                     foreach (var item in cards)
                     {
-                        sb.AppendLine($"{stars[item.Rarity]} {data.Characters[item.CharacterId.ToString()].CharacterName[0]} - {item.Prefix[0]}");
+                        sb.AppendLine($"{stars[item.Item2.Rarity]} {data.Characters[item.Item2.CharacterId.ToString()].CharacterName[0]} - {item.Item2.Prefix[0]}");
                     }
-                    result = new IMessageBase[]
+                    result = new List<IMessageBase>
                     {
-                        new PlainMessage(sb.ToString())
+                        new PlainMessage(sb.ToString()),
+                        img
                     };
                     logger.LogInformation(sb.ToString());
                     break;
@@ -91,15 +98,15 @@ namespace Rimirin.Handlers
             }
             if (isGroupMessage)
             {
-                await session.SendGroupMessageAsync(((IGroupMemberInfo)info).Group.Id, result);
+                await session.SendGroupMessageAsync(((IGroupMemberInfo)info).Group.Id, result.ToArray());
             }
             else
             {
-                await session.SendFriendMessageAsync(info.Id, result);
+                await session.SendFriendMessageAsync(info.Id, result.ToArray());
             }
         }
 
-        private async Task<Card> GachaSingle(string id = null, bool tenTimes = false)
+        private async Task<(string, Card)> GachaSingle(string id = null, bool tenTimes = false)
         {
             GachaDetail gd = !string.IsNullOrWhiteSpace(id) ? await client.GetGacha(id) : data.RecentGachaDetails.FirstOrDefault(i => i.Value.Type == "permanent" || i.Value.Type == "limited").Value;
             if (gd == null)
@@ -144,7 +151,7 @@ namespace Rimirin.Handlers
             }
             // 5. 取出卡片
             int nextIndex = randomer.Next(0, cards.Count - 1);
-            return data.Cards[cards[nextIndex].Key];
+            return (cards[nextIndex].Key, data.Cards[cards[nextIndex].Key]);
         }
 
         private GachaDetail GetRecentGachaDetail()

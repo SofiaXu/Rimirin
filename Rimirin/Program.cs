@@ -25,6 +25,7 @@ namespace Rimirin
                     services.AddMiraiPlugins();
                     services.AddRimiHandlers();
                     services.AddSingleton<BestdoriClient>();
+                    services.AddSingleton<GachaImageRender>();
                     services.Configure<MiraiSessionOptions>(hostContext.Configuration.GetSection(MiraiSessionOptions.MiraiSession));
                 });
     }
