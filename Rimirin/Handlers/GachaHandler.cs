@@ -153,10 +153,11 @@ namespace Rimirin.Handlers
                                 };
                             }
                             List<(string, Card)> cards = new List<(string, Card)>(10);
-                            for (int i = 0; i < 10; i++)
+                            for (int i = 0; i < 9; i++)
                             {
                                 cards.Add(await GachaSingle(id));
                             }
+                            cards.Add(await GachaSingle(id, true));
                             using (var s = await render.RenderGachaImageAsync(cards))
                             {
                                 img = await session.UploadPictureAsync(UploadTarget.Group, s);
