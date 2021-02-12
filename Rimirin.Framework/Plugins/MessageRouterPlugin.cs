@@ -74,7 +74,15 @@ namespace Rimirin.Framework.Plugins
             logger.LogInformation("已找到好友消息处理器：" + handler.Key.Alias ?? handler.Value.FullName);
             using (var sp = serviceProvider.CreateScope())
             {
-                await ((IFriendMessageHandler)sp.ServiceProvider.GetRequiredService(handler.Value.AsType()))?.DoHandle(session, e.Chain, e.Sender);
+                try
+                {
+                    await ((IFriendMessageHandler)sp.ServiceProvider.GetRequiredService(handler.Value.AsType()))?.DoHandle(session, e.Chain, e.Sender);
+                }
+                catch (Exception ex)
+                {
+
+                    logger.LogError($"消息处理器{(handler.Key.Alias is null ? handler.Value.FullName : handler.Key.Alias)}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
+                }
             }
             return false;
         }
@@ -91,10 +99,18 @@ namespace Rimirin.Framework.Plugins
             {
                 return false;
             }
-            logger.LogInformation("已找到群消息处理器：" + handler.Key.Alias ?? handler.Value.FullName);
+            logger.LogInformation($"已找到群消息处理器：{handler.Key.Alias ?? handler.Value.FullName}");
             using (var sp = serviceProvider.CreateScope())
             {
-                await ((IGroupMessageHandler)sp.ServiceProvider.GetRequiredService(handler.Value.AsType())).DoHandle(session, e.Chain, e.Sender);
+                try
+                {
+                    await ((IGroupMessageHandler)sp.ServiceProvider.GetRequiredService(handler.Value.AsType())).DoHandle(session, e.Chain, e.Sender);
+                }
+                catch (Exception ex)
+                {
+
+                    logger.LogError($"消息处理器{(handler.Key.Alias is null ? handler.Value.FullName : handler.Key.Alias)}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
+                }
             }
             return false;
         }
@@ -114,7 +130,15 @@ namespace Rimirin.Framework.Plugins
             logger.LogInformation("已找到临时消息处理器：" + handler.Key.Alias ?? handler.Value.FullName);
             using (var sp = serviceProvider.CreateScope())
             {
-                await ((ITempMessageHandler)sp.ServiceProvider.GetRequiredService(handler.Value.AsType())).DoHandle(session, e.Chain, e.Sender);
+                try
+                {
+                    await ((ITempMessageHandler)sp.ServiceProvider.GetRequiredService(handler.Value.AsType())).DoHandle(session, e.Chain, e.Sender);
+                }
+                catch (Exception ex)
+                {
+
+                    logger.LogError($"消息处理器{(handler.Key.Alias is null ? handler.Value.FullName : handler.Key.Alias)}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
+                }
             }
             return false;
         }
