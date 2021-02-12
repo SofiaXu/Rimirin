@@ -1,0 +1,122 @@
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Mirai_CSharp;
+using Mirai_CSharp.Models;
+using Mirai_CSharp.Plugin;
+using Mirai_CSharp.Plugin.Interfaces;
+using Rimirin.Framework.Handlers.Announces;
+using Rimirin.Framework.Handlers.Interfaces;
+using Rimirin.Framework.Options;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+namespace Rimirin.Framework.Plugins
+{
+    /// <summary>
+    /// 消息路由器用于路由好友消息（<see cref="IFriendMessageHandler"/>）、群消息（<see cref="IGroupMessageHandler"/>）和临时消息（<see cref="ITempMessageHandler"/>）
+    /// </summary>
+    public class MessageRouterPlugin : IPlugin, IGroupMessage, IFriendMessage, ITempMessage
+    {
+        private readonly IServiceProvider serviceProvider;
+        private readonly ILogger<MessageRouterPlugin> logger;
+        private readonly Dictionary<MessageHandlerAttribute, TypeInfo> friendHandlers = new Dictionary<MessageHandlerAttribute, TypeInfo>();
+        private readonly Dictionary<MessageHandlerAttribute, TypeInfo> groupHandlers = new Dictionary<MessageHandlerAttribute, TypeInfo>();
+        private readonly Dictionary<MessageHandlerAttribute, TypeInfo> tempHandlers = new Dictionary<MessageHandlerAttribute, TypeInfo>();
+
+        public MessageRouterPlugin(IServiceProvider serviceProvider, ILogger<MessageRouterPlugin> logger, IOptions<HandlerOptions> options)
+        {
+            this.serviceProvider = serviceProvider;
+            this.logger = logger;
+            var plugins = options.Value.Handlers.Where(ti => ti.GetInterface("IGroupMessageHandler") != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
+            foreach (var plugin in plugins)
+            {
+                foreach (MessageHandlerAttribute attribute in Attribute.GetCustomAttributes(plugin, typeof(MessageHandlerAttribute)))
+                {
+                    groupHandlers.Add(attribute, plugin);
+                }
+            }
+            plugins = options.Value.Handlers.Where(ti => ti.GetInterface("IFriendMessageHandler") != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
+            foreach (var plugin in plugins)
+            {
+                foreach (MessageHandlerAttribute attribute in Attribute.GetCustomAttributes(plugin, typeof(MessageHandlerAttribute)))
+                {
+                    groupHandlers.Add(attribute, plugin);
+                }
+            }
+            plugins = options.Value.Handlers.Where(ti => ti.GetInterface("ITempMessageHandler") != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
+            foreach (var plugin in plugins)
+            {
+                foreach (MessageHandlerAttribute attribute in Attribute.GetCustomAttributes(plugin, typeof(MessageHandlerAttribute)))
+                {
+                    tempHandlers.Add(attribute, plugin);
+                }
+            }
+        }
+
+        public async Task<bool> FriendMessage(MiraiHttpSession session, IFriendMessageEventArgs e)
+        {
+            var text = e.Chain.FirstOrDefault(m => m.Type == "Plain")?.ToString();
+            if (text == null)
+            {
+                return false;
+            }
+            var handler = friendHandlers.Where(h => Regex.IsMatch(text, h.Key.Regex)).FirstOrDefault();
+            if (handler.Value == null)
+            {
+                return false;
+            }
+            logger.LogInformation("已找到好友消息处理器：" + handler.Key.Alias ?? handler.Value.FullName);
+            using (var sp = serviceProvider.CreateScope())
+            {
+                await ((IFriendMessageHandler)sp.ServiceProvider.GetRequiredService(handler.Value.AsType()))?.DoHandle(session, e.Chain, e.Sender);
+            }
+            return false;
+        }
+
+        public async Task<bool> GroupMessage(MiraiHttpSession session, IGroupMessageEventArgs e)
+        {
+            var text = e.Chain.FirstOrDefault(m => m.Type == "Plain")?.ToString();
+            if (text == null)
+            {
+                return false;
+            }
+            var handler = groupHandlers.Where(h => Regex.IsMatch(text, h.Key.Regex)).FirstOrDefault();
+            if (handler.Value == null)
+            {
+                return false;
+            }
+            logger.LogInformation("已找到群消息处理器：" + handler.Key.Alias ?? handler.Value.FullName);
+            using (var sp = serviceProvider.CreateScope())
+            {
+                await ((IGroupMessageHandler)sp.ServiceProvider.GetRequiredService(handler.Value.AsType())).DoHandle(session, e.Chain, e.Sender);
+            }
+            return false;
+        }
+
+        public async Task<bool> TempMessage(MiraiHttpSession session, ITempMessageEventArgs e)
+        {
+            var text = e.Chain.FirstOrDefault(m => m.Type == "Plain")?.ToString();
+            if (text == null)
+            {
+                return false;
+            }
+            var handler = tempHandlers.Where(h => Regex.IsMatch(text, h.Key.Regex)).FirstOrDefault();
+            if (handler.Value == null)
+            {
+                return false;
+            }
+            logger.LogInformation("已找到临时消息处理器：" + handler.Key.Alias ?? handler.Value.FullName);
+            using (var sp = serviceProvider.CreateScope())
+            {
+                await ((ITempMessageHandler)sp.ServiceProvider.GetRequiredService(handler.Value.AsType())).DoHandle(session, e.Chain, e.Sender);
+            }
+            return false;
+        }
+    }
+}

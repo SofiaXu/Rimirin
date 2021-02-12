@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Mirai_CSharp;
-using Rimirin.Common;
+using Rimirin.Framework.DependencyInjection;
+using Rimirin.Framework.Options;
 using Rimirin.Garupa;
-using Rimirin.Options;
 
 namespace Rimirin
 {
@@ -20,13 +20,14 @@ namespace Rimirin
                 {
                     services.AddHostedService<Worker>();
                     services.AddLogging();
-                    services.AddSingleton<MiraiHttpSession>();
+                    services.AddMessageHandlers();
+                    services.AddAutoReconnector();
+                    services.AddMessageRouter();
                     services.AddSingleton<GarupaData>();
                     services.AddMiraiPlugins();
-                    services.AddRimiHandlers();
+                    services.AddMirai(hostContext.Configuration.GetSection(SessionOptions.MiraiSession));
                     services.AddSingleton<BestdoriClient>();
                     services.AddSingleton<GachaImageRender>();
-                    services.Configure<MiraiSessionOptions>(hostContext.Configuration.GetSection(MiraiSessionOptions.MiraiSession));
                 });
     }
 }

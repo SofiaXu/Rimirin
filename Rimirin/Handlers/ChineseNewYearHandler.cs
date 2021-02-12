@@ -1,6 +1,7 @@
 ﻿using Mirai_CSharp;
 using Mirai_CSharp.Models;
-using Rimirin.Common;
+using Rimirin.Framework.Handlers.Announces;
+using Rimirin.Framework.Handlers.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,12 +12,12 @@ using System.Threading.Tasks;
 
 namespace Rimirin.Handlers
 {
-    [HandlerKey("^新年快乐$")]
-    [HandlerKey("^新年抽签$")]
+    [MessageHandler("^新年快乐$")]
+    [MessageHandler("^新年抽签$")]
     public class ChineseNewYearHandler : IHandler, IGroupMessageHandler
     {
         private readonly Random randomer = new Random();
-        public async void DoHandleAsync(MiraiHttpSession session, IMessageBase[] chain, IBaseInfo info, bool isGroupMessage = true)
+        public async Task DoHandle(MiraiHttpSession session, IMessageBase[] chain, IGroupMemberInfo info)
         {
             ChineseLunisolarCalendar calendar = new ChineseLunisolarCalendar();
             var now = DateTime.Now;
@@ -60,14 +61,7 @@ namespace Rimirin.Handlers
                 default:
                     break;
             }
-            if (isGroupMessage)
-            {
-                await session.SendGroupMessageAsync(((IGroupMemberInfo)info).Group.Id, result.ToArray());
-            }
-            else
-            {
-                await session.SendFriendMessageAsync(info.Id, result.ToArray());
-            }
+            await session.SendGroupMessageAsync(info.Group.Id, result.ToArray());
         }
     }
 }

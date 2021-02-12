@@ -4,32 +4,36 @@ using Mirai_CSharp;
 using Mirai_CSharp.Models;
 using Mirai_CSharp.Plugin;
 using Mirai_CSharp.Plugin.Interfaces;
-using Rimirin.Options;
+using Rimirin.Framework.Options;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Rimirin.Plugins
+namespace Rimirin.Framework.Plugins
 {
-    public class DisconnectedPlugin : IPlugin, IDisconnected
+    /// <summary>
+    /// 自动重新连接
+    /// </summary>
+    public class ReconnectorPlugin : IPlugin, IDisconnected
     {
-        private readonly IOptions<MiraiSessionOptions> miraiSessionOptions;
-        private readonly ILogger<DisconnectedPlugin> logger;
-        public DisconnectedPlugin(IOptions<MiraiSessionOptions> miraiSessionOptions, ILogger<DisconnectedPlugin> logger)
+        private readonly IOptions<SessionOptions> miraiSessionOptions;
+        private readonly ILogger<ReconnectorPlugin> logger;
+
+        public ReconnectorPlugin(IOptions<SessionOptions> miraiSessionOptions, ILogger<ReconnectorPlugin> logger)
         {
             this.miraiSessionOptions = miraiSessionOptions;
             this.logger = logger;
         }
+
         public async Task<bool> Disconnected(MiraiHttpSession session, IDisconnectedEventArgs e)
         {
             logger.LogError("已断开连接，正在尝试重连");
+            int counter = 0;
             MiraiHttpSessionOptions options = new MiraiHttpSessionOptions(miraiSessionOptions.Value.MiraiHost, miraiSessionOptions.Value.MiraiHostPort, miraiSessionOptions.Value.MiraiSessionKey);
             while (true)
             {
                 try
                 {
+                    logger.LogError($"正在尝试重连，第{counter}次");
                     await session.ConnectAsync(options, miraiSessionOptions.Value.MiraiSessionQQ);
                     logger.LogInformation("重连成功");
                     return true;

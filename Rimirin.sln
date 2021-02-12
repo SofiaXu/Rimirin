@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rimirin", "Rimirin\Rimirin.csproj", "{9D3928CD-042C-4769-9AAA-EF2CA7983B3F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rimirin", "Rimirin\Rimirin.csproj", "{9D3928CD-042C-4769-9AAA-EF2CA7983B3F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rimirin.Framework", "Rimirin.Framework\Rimirin.Framework.csproj", "{15D23E90-94F4-47FB-B71F-D70D55092C9A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rimirin.Bestdori", "Rimirin.Bestdori\Rimirin.Bestdori.csproj", "{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{9D3928CD-042C-4769-9AAA-EF2CA7983B3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9D3928CD-042C-4769-9AAA-EF2CA7983B3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9D3928CD-042C-4769-9AAA-EF2CA7983B3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15D23E90-94F4-47FB-B71F-D70D55092C9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15D23E90-94F4-47FB-B71F-D70D55092C9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15D23E90-94F4-47FB-B71F-D70D55092C9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15D23E90-94F4-47FB-B71F-D70D55092C9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

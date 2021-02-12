@@ -3,16 +3,16 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Mirai_CSharp;
 using Mirai_CSharp.Plugin;
-using Rimirin.Common;
 using Rimirin.Garupa;
 using Rimirin.Models.Garupa;
-using Rimirin.Options;
+using Rimirin.Framework.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Rimirin
 {
@@ -20,29 +20,23 @@ namespace Rimirin
     {
         private readonly ILogger<Worker> _logger;
         private readonly MiraiHttpSession _session;
-        private readonly IOptions<MiraiSessionOptions> _miraiSessionOptions;
+        private readonly IOptions<SessionOptions> _SessionOptions;
         private readonly BestdoriClient _client;
         private readonly GarupaData _data;
         private readonly IServiceProvider _serviceProvider;
         private readonly System.Timers.Timer _timer;
-        private readonly List<ITimeMessageHandler> _handlers = new List<ITimeMessageHandler>();
 
         public Worker(ILogger<Worker> logger, MiraiHttpSession session,
-            IOptions<MiraiSessionOptions> miraiSessionOptions, GarupaData data,
+            IOptions<SessionOptions> SessionOptions, GarupaData data,
             IServiceProvider serviceProvider, BestdoriClient client)
         {
             _logger = logger;
             _session = session;
-            _miraiSessionOptions = miraiSessionOptions;
+            _SessionOptions = SessionOptions;
             _client = client;
             _data = data;
             _serviceProvider = serviceProvider;
             _timer = new System.Timers.Timer(TimeSpan.FromHours(1).TotalMilliseconds);
-            var plugins = Assembly.GetExecutingAssembly().DefinedTypes.Where(ti => ti.GetInterface("ITimeMessageHandler") != null).ToArray();
-            foreach (var plugin in plugins)
-            {
-                _handlers.Add((ITimeMessageHandler)serviceProvider.GetService(plugin.AsType()));
-            }
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -62,7 +56,7 @@ namespace Rimirin
         /// <summary>
         /// Æô¶¯
         /// </summary>
-        private async void Run()
+        private void Run()
         {
             _logger.LogInformation("Rimirin BotÆô¶¯ÖÐ...");
 #if DEBUG
@@ -73,12 +67,6 @@ namespace Rimirin
             UpdateFiles(updateFromNetwork);
             _timer.Elapsed += OnTimerElapsed;
             _timer.Start();
-            var plugins = Assembly.GetExecutingAssembly().DefinedTypes.Where(ti => ti.GetInterface("IPlugin") != null).ToArray();
-            foreach (var plugin in plugins)
-            {
-                _session.AddPlugin((IPlugin)_serviceProvider.GetService(plugin.AsType()));
-            }
-            await _session.ConnectAsync(new Mirai_CSharp.Models.MiraiHttpSessionOptions(_miraiSessionOptions.Value.MiraiHost, _miraiSessionOptions.Value.MiraiHostPort, _miraiSessionOptions.Value.MiraiSessionKey), _miraiSessionOptions.Value.MiraiSessionQQ);
 #if DEBUG
             //OnTimerElapsed(null, null);
 #endif
@@ -92,11 +80,6 @@ namespace Rimirin
         private void OnTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             UpdateFiles();
-#if DEBUG
-            _handlers.ForEach(h => h.DoTimeHandleAsync(_session, null, null, false));
-#else
-            _handlers.ForEach(h => h.DoTimeHandleAsync(_session, null, null));
-#endif
         }
 
         private async void UpdateFiles(bool updateFromNetwork = true)

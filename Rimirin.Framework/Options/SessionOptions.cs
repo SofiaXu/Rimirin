@@ -1,6 +1,8 @@
-﻿namespace Rimirin.Options
+﻿using Rimirin.Framework.Options.Interface;
+
+namespace Rimirin.Framework.Options
 {
-    public class MiraiSessionOptions
+    public class SessionOptions : IRimirinOptions
     {
         public const string MiraiSession = "MiraiSession";
 

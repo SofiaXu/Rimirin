@@ -188,7 +188,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Common\" />
     <Folder Include="Resources\Gacha\Temp\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rimirin.Bestdori\Rimirin.Bestdori.csproj" />
+    <ProjectReference Include="..\Rimirin.Framework\Rimirin.Framework.csproj" />
   </ItemGroup>
 
 </Project>

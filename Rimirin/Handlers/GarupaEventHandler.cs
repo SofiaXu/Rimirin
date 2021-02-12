@@ -1,44 +1,36 @@
 ﻿using Microsoft.Extensions.Logging;
 using Mirai_CSharp;
 using Mirai_CSharp.Models;
-using Rimirin.Common;
+using Rimirin.Framework.Handlers.Announces;
+using Rimirin.Framework.Handlers.Interfaces;
 using Rimirin.Garupa;
 using System;
+using System.Threading.Tasks;
 
 namespace Rimirin.Handlers
 {
-    [HandlerKey("^最新活动$")]
+    [MessageHandler("^最新活动$")]
     public class GarupaEventHandler : IHandler, IMessageHandler, IGroupMessageHandler
     {
         private readonly GarupaData data;
         private readonly BestdoriClient client;
         private readonly ILogger<GarupaEventHandler> logger;
-        private int latestEventId;
 
         public GarupaEventHandler(GarupaData data, BestdoriClient client, ILogger<GarupaEventHandler> logger)
         {
             this.data = data;
             this.client = client;
             this.logger = logger;
-            latestEventId = -1;
         }
 
-        public async void DoHandleAsync(MiraiHttpSession session, IMessageBase[] chain, IBaseInfo info, bool isGroupMessage = true)
+        public async Task DoHandle(MiraiHttpSession session, IMessageBase[] chain, IGroupMemberInfo info)
         {
             logger.LogInformation($"{info.Name} 询问最新活动");
             var latestEvent = data.GetLatestEvent();
             bool isEventChanged = false;
-            if (int.Parse(latestEvent.Item1) != latestEventId)
-            {
-                latestEventId = int.Parse(latestEvent.Item1);
-                isEventChanged = true;
-            }
             string message;
             IMessageBase img;
-            if (isGroupMessage)
-                img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetEventBannerImagePath(latestEvent.Item1));
-            else
-                img = await session.UploadPictureAsync(UploadTarget.Friend, await client.GetEventBannerImagePath(latestEvent.Item1));
+            img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetEventBannerImagePath(latestEvent.Item1));
             DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(latestEvent.Item2.EndAt[0])).LocalDateTime;
             DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(latestEvent.Item2.StartAt[0])).LocalDateTime;
             string eventState = startTime >= DateTime.Now ? $"即将开始，剩余{startTime - DateTime.Now:d\\日h\\小\\时m\\分}" : endTime <= DateTime.Now ? "结束" : $"正在进行，剩余{endTime - DateTime.Now:d\\日h\\小\\时m\\分}";
@@ -49,14 +41,7 @@ namespace Rimirin.Handlers
                     new PlainMessage((isEventChanged ? "发现新活动！\n" : "") + message),
                     img
             };
-            if (isGroupMessage)
-            {
-                await session.SendGroupMessageAsync(((IGroupMemberInfo)info).Group.Id, result);
-            }
-            else
-            {
-                await session.SendFriendMessageAsync(info.Id, result);
-            }
+            await session.SendGroupMessageAsync(info.Group.Id, result);
         }
     }
 }
