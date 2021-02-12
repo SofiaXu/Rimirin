@@ -19,7 +19,7 @@ namespace Rimirin.Garupa
             this.client = bestdori;
             this.data = data;
         }
-        public async Task<string> RenderGachaImageAsync(IList<(string, Card)> cards)
+        public async Task<Stream> RenderGachaImageAsync(IList<(string, Card)> cards)
         {
             using SKBitmap bitmap = SKBitmap.Decode("Resources\\Gacha\\Gacha.png");
             using SKSurface surface = SKSurface.Create(new SKImageInfo(bitmap.Width, bitmap.Height, bitmap.ColorType, bitmap.AlphaType, bitmap.ColorSpace));
@@ -68,11 +68,7 @@ namespace Rimirin.Garupa
                 }
             }
             canvas.Save();
-            var filePath = $"Resources\\Gacha\\Temp\\{Guid.NewGuid():n}.png";
-            using FileStream fs = new FileStream(filePath, FileMode.Create);
-            using var data = surface.Snapshot().Encode(SKEncodedImageFormat.Png, 100);
-            await data.AsStream().CopyToAsync(fs);
-            return filePath;
+            return surface.Snapshot().Encode(SKEncodedImageFormat.Png, 100).AsStream();
         }
 
         private bool disposedValue;
