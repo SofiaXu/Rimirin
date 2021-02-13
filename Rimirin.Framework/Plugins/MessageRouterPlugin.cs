@@ -71,7 +71,7 @@ namespace Rimirin.Framework.Plugins
             {
                 return false;
             }
-            logger.LogInformation($"收到匹配\"{handler.Key.Regex}\"的消息：{string.Join(null, e.Chain.AsEnumerable())}");
+            logger.LogInformation($"来自好友\"{e.Sender.Name}\"{{{e.Sender.Id}}}匹配\"{handler.Key.Regex}\"的好友消息：{string.Join(null, e.Chain.AsEnumerable())}");
             logger.LogInformation($"已找到好友消息处理器：{handler.Key.HandlerName ?? handler.Value.FullName}");
             using (var sp = serviceProvider.CreateScope())
             {
@@ -100,7 +100,7 @@ namespace Rimirin.Framework.Plugins
             {
                 return false;
             }
-            logger.LogInformation($"收到匹配\"{handler.Key.Regex}\"的消息：{string.Join(null, e.Chain.AsEnumerable())}");
+            logger.LogInformation($"来自群\"{e.Sender.Group.Name}\"{{{e.Sender.Group.Id}}}成员\"{e.Sender.Name}\"{{{e.Sender.Id}}}匹配\"{handler.Key.Regex}\"的群消息：{string.Join(null, e.Chain.AsEnumerable())}");
             logger.LogInformation($"已找到群消息处理器：{handler.Key.HandlerName ?? handler.Value.FullName}");
             using (var sp = serviceProvider.CreateScope())
             {
@@ -129,7 +129,7 @@ namespace Rimirin.Framework.Plugins
             {
                 return false;
             }
-            logger.LogInformation($"收到匹配\"{handler.Key.Regex}\"的消息：{string.Join(null, e.Chain.AsEnumerable())}");
+            logger.LogInformation($"来自群\"{e.Sender.Group.Name}\"{{{e.Sender.Group.Id}}}成员\"{e.Sender.Name}\"{{{e.Sender.Id}}}匹配\"{handler.Key.Regex}\"的临时消息：{string.Join(null, e.Chain.AsEnumerable())}");
             logger.LogInformation($"已找到临时消息处理器：{handler.Key.HandlerName ?? handler.Value.FullName}");
             using (var sp = serviceProvider.CreateScope())
             {

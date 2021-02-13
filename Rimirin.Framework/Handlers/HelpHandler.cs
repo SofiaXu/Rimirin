@@ -23,9 +23,34 @@ namespace Rimirin.Framework.Handlers
             this.options = options;
         }
 
-        Task ITempMessageHandler.DoHandle(MiraiHttpSession session, IMessageBase[] chain, IGroupMemberInfo info)
+        async Task ITempMessageHandler.DoHandle(MiraiHttpSession session, IMessageBase[] chain, IGroupMemberInfo info)
         {
-            throw new NotImplementedException();
+            StringBuilder sb = new StringBuilder(256);
+            sb.AppendLine("帮助");
+            Dictionary<MessageHandlerAttribute, TypeInfo> handlers = new Dictionary<MessageHandlerAttribute, TypeInfo>();
+            var plugins = options.Value.Handlers.Where(ti => ti.GetInterface("ITempMessageHandler") != null).ToArray();
+            foreach (var plugin in plugins)
+            {
+                foreach (MessageHandlerAttribute attribute in Attribute.GetCustomAttributes(plugin, typeof(MessageHandlerAttribute)))
+                {
+                    handlers.Add(attribute, plugin);
+                }
+            }
+            handlers.GroupBy(k => k.Key.HandlerName ?? k.Value.FullName, v => v.Key).ToList().ForEach(g =>
+            {
+                sb.AppendLine($"模块名：{g.Key}");
+                foreach (var item in g)
+                {
+                    sb.AppendLine($"命令：{item.HelpCommand ?? item.Regex}");
+                    if (item.HelpText != null) sb.AppendLine($"帮助：{item.HelpText}");
+                }
+                sb.AppendLine();
+            });
+            var result = new IMessageBase[]
+            {
+                new PlainMessage(sb.ToString())
+            };
+            await session.SendTempMessageAsync(info.Id, info.Group.Id, result);
         }
 
         async Task IGroupMessageHandler.DoHandle(MiraiHttpSession session, IMessageBase[] chain, IGroupMemberInfo info)
@@ -58,9 +83,34 @@ namespace Rimirin.Framework.Handlers
             await session.SendGroupMessageAsync(info.Group.Id, result);
         }
 
-        public Task DoHandle(MiraiHttpSession session, IMessageBase[] chain, IFriendInfo info)
+        public async Task DoHandle(MiraiHttpSession session, IMessageBase[] chain, IFriendInfo info)
         {
-            throw new NotImplementedException();
+            StringBuilder sb = new StringBuilder(256);
+            sb.AppendLine("帮助");
+            Dictionary<MessageHandlerAttribute, TypeInfo> handlers = new Dictionary<MessageHandlerAttribute, TypeInfo>();
+            var plugins = options.Value.Handlers.Where(ti => ti.GetInterface("IFriendMessageHandler") != null).ToArray();
+            foreach (var plugin in plugins)
+            {
+                foreach (MessageHandlerAttribute attribute in Attribute.GetCustomAttributes(plugin, typeof(MessageHandlerAttribute)))
+                {
+                    handlers.Add(attribute, plugin);
+                }
+            }
+            handlers.GroupBy(k => k.Key.HandlerName ?? k.Value.FullName, v => v.Key).ToList().ForEach(g =>
+            {
+                sb.AppendLine($"模块名：{g.Key}");
+                foreach (var item in g)
+                {
+                    sb.AppendLine($"命令：{item.HelpCommand ?? item.Regex}");
+                    if (item.HelpText != null) sb.AppendLine($"帮助：{item.HelpText}");
+                }
+                sb.AppendLine();
+            });
+            var result = new IMessageBase[]
+            {
+                new PlainMessage(sb.ToString())
+            };
+            await session.SendFriendMessageAsync(info.Id, result);
         }
     }
 }
