@@ -21,6 +21,7 @@ namespace Rimirin
                     services.AddHostedService<Worker>();
                     services.AddLogging();
                     services.AddMessageHandlers();
+                    services.AddHelpHandler();
                     services.AddAutoReconnector();
                     services.AddMessageRouter();
                     services.AddSingleton<GarupaData>();

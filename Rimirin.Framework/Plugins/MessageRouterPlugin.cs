@@ -46,7 +46,7 @@ namespace Rimirin.Framework.Plugins
             {
                 foreach (MessageHandlerAttribute attribute in Attribute.GetCustomAttributes(plugin, typeof(MessageHandlerAttribute)))
                 {
-                    groupHandlers.Add(attribute, plugin);
+                    friendHandlers.Add(attribute, plugin);
                 }
             }
             plugins = options.Value.Handlers.Where(ti => ti.GetInterface("ITempMessageHandler") != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
@@ -71,7 +71,8 @@ namespace Rimirin.Framework.Plugins
             {
                 return false;
             }
-            logger.LogInformation("已找到好友消息处理器：" + handler.Key.Alias ?? handler.Value.FullName);
+            logger.LogInformation($"收到匹配\"{handler.Key.Regex}\"的消息：{string.Join(null, e.Chain.AsEnumerable())}");
+            logger.LogInformation($"已找到好友消息处理器：{handler.Key.HandlerName ?? handler.Value.FullName}");
             using (var sp = serviceProvider.CreateScope())
             {
                 try
@@ -81,7 +82,7 @@ namespace Rimirin.Framework.Plugins
                 catch (Exception ex)
                 {
 
-                    logger.LogError($"消息处理器{(handler.Key.Alias is null ? handler.Value.FullName : handler.Key.Alias)}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
+                    logger.LogError($"消息处理器{(handler.Key.HandlerName is null ? handler.Value.FullName : handler.Key.HandlerName)}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
                 }
             }
             return false;
@@ -99,7 +100,8 @@ namespace Rimirin.Framework.Plugins
             {
                 return false;
             }
-            logger.LogInformation($"已找到群消息处理器：{handler.Key.Alias ?? handler.Value.FullName}");
+            logger.LogInformation($"收到匹配\"{handler.Key.Regex}\"的消息：{string.Join(null, e.Chain.AsEnumerable())}");
+            logger.LogInformation($"已找到群消息处理器：{handler.Key.HandlerName ?? handler.Value.FullName}");
             using (var sp = serviceProvider.CreateScope())
             {
                 try
@@ -109,7 +111,7 @@ namespace Rimirin.Framework.Plugins
                 catch (Exception ex)
                 {
 
-                    logger.LogError($"消息处理器{(handler.Key.Alias is null ? handler.Value.FullName : handler.Key.Alias)}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
+                    logger.LogError($"消息处理器{handler.Key.HandlerName ?? handler.Value.FullName}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
                 }
             }
             return false;
@@ -127,7 +129,8 @@ namespace Rimirin.Framework.Plugins
             {
                 return false;
             }
-            logger.LogInformation("已找到临时消息处理器：" + handler.Key.Alias ?? handler.Value.FullName);
+            logger.LogInformation($"收到匹配\"{handler.Key.Regex}\"的消息：{string.Join(null, e.Chain.AsEnumerable())}");
+            logger.LogInformation($"已找到临时消息处理器：{handler.Key.HandlerName ?? handler.Value.FullName}");
             using (var sp = serviceProvider.CreateScope())
             {
                 try
@@ -137,7 +140,7 @@ namespace Rimirin.Framework.Plugins
                 catch (Exception ex)
                 {
 
-                    logger.LogError($"消息处理器{(handler.Key.Alias is null ? handler.Value.FullName : handler.Key.Alias)}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
+                    logger.LogError($"消息处理器{handler.Key.HandlerName ?? handler.Value.FullName}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
                 }
             }
             return false;

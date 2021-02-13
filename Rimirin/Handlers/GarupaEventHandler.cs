@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Rimirin.Handlers
 {
-    [MessageHandler("^最新活动$")]
+    [MessageHandler("^最新活动$", "邦邦活动", "最新活动", "查询最新的活动信息")]
     public class GarupaEventHandler : IHandler, IMessageHandler, IGroupMessageHandler
     {
         private readonly GarupaData data;

@@ -12,8 +12,8 @@ using System.Threading.Tasks;
 
 namespace Rimirin.Handlers
 {
-    [MessageHandler("^新年快乐$")]
-    [MessageHandler("^新年抽签$")]
+    [MessageHandler("^新年快乐$", "邦邦新年", "新年快乐", "发出来自邦邦的问候")]
+    [MessageHandler("^新年抽签$", "邦邦新年", "新年抽签", "看看今日你的邦邦运势如何")]
     public class ChineseNewYearHandler : IHandler, IGroupMessageHandler
     {
         private readonly Random randomer = new Random();

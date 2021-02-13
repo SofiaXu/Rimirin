@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Rimirin.Framework.Handlers;
 using Rimirin.Framework.Options;
 using System.Linq;
 using System.Reflection;
@@ -36,6 +37,18 @@ namespace Rimirin.Framework.DependencyInjection
                 services.AddScoped(plugin.AsType());
             }
             services.Configure<HandlerOptions>(o => o.Handlers.AddRange(plugins));
+            return services;
+        }
+
+        /// <summary>
+        /// 注入内置帮助处理器
+        /// </summary>
+        /// <param name="services"></param>
+        /// <returns></returns>
+        public static IServiceCollection AddHelpHandler(this IServiceCollection services)
+        {
+            services.AddScoped<HelpHandler>();
+            services.Configure<HandlerOptions>(o => o.Handlers.Add(typeof(HelpHandler).GetTypeInfo()));
             return services;
         }
     }

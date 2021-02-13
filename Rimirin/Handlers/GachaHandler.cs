@@ -14,11 +14,11 @@ using System.Threading.Tasks;
 
 namespace Rimirin.Handlers
 {
-    [MessageHandler("^十连$")]
-    [MessageHandler("^十连三星必得$")]
-    [MessageHandler("^十连 \\d+$")]
-    [MessageHandler("^单抽$")]
-    [MessageHandler("^当期池子$")]
+    [MessageHandler("^十连$", "邦邦抽卡", "十连", "十连抽当前活动卡池")]
+    [MessageHandler("^十连三星必得$", "邦邦抽卡", "十连三星必得", "十连抽当前三星必得卡池")]
+    [MessageHandler("^十连 \\d+$", "邦邦抽卡", "十连 {卡池编号}", "十连抽指定编号卡池，可在bestdori查询编号")]
+    [MessageHandler("^单抽$", "邦邦抽卡", "单抽", "单抽一发当前活动卡池")]
+    [MessageHandler("^当前活动卡池$", "邦邦抽卡", "当前活动卡池", "显示当前活动卡池的信息")]
     public class GachaHandler : IHandler, IMessageHandler, IGroupMessageHandler
     {
         private readonly GarupaData data;
@@ -65,7 +65,7 @@ namespace Rimirin.Handlers
                         logger.LogInformation(message);
                         break;
                     }
-                case "当期池子":
+                case "当前活动卡池":
                     {
                         GachaDetail gd = GetRecentGachaDetail();
                         DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.ClosedAt[0])).LocalDateTime;
@@ -138,7 +138,8 @@ namespace Rimirin.Handlers
                         if (match.Success)
                         {
                             string id = match.Groups[1].Value;
-                            if (data.Gacha.TryGetValue(id, out _))
+                            Gacha gacha;
+                            if (data.Gacha.TryGetValue(id, out gacha))
                             {
                                 result = new List<IMessageBase>
                                 {
@@ -152,6 +153,7 @@ namespace Rimirin.Handlers
                                     new PlainMessage($"卡池{id}卡牌不可抽取")
                                 };
                             }
+                            sb.AppendLine($"卡池名称：{gacha.GachaName[0]}");
                             List<(string, Card)> cards = new List<(string, Card)>(10);
                             for (int i = 0; i < 9; i++)
                             {
@@ -182,7 +184,7 @@ namespace Rimirin.Handlers
 
         private async Task<(string, Card)> GachaSingle(string id = null, bool tenTimes = false)
         {
-            GachaDetail gd = !string.IsNullOrWhiteSpace(id) ? await client.GetGacha(id) : data.RecentGachaDetails.FirstOrDefault(i => i.Value.Type == "permanent" || i.Value.Type == "limited").Value;
+            GachaDetail gd = !string.IsNullOrWhiteSpace(id) ? await client.GetGacha(id) : GetRecentGachaDetail();
             if (gd == null)
             {
                 gd = data.RecentGachaDetails.Last().Value;
