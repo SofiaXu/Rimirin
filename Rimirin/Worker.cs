@@ -36,7 +36,7 @@ namespace Rimirin
             _client = client;
             _data = data;
             _serviceProvider = serviceProvider;
-            _timer = new System.Timers.Timer(TimeSpan.FromHours(1).TotalMilliseconds);
+            _timer = new System.Timers.Timer(TimeSpan.FromMinutes(2).TotalMilliseconds);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,11 +44,9 @@ namespace Rimirin
             try
             {
                 Run();
-                while (!stoppingToken.IsCancellationRequested) ;
             }
             finally
             {
-                Stop();
             }
             await Task.CompletedTask;
         }
