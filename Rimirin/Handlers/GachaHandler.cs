@@ -166,7 +166,7 @@ namespace Rimirin.Handlers
                                 };
                                 break;
                             }
-                            int tenTimesRate = payment.Pickup ? 4 : 3;
+                            int tenTimesRate = payment.Behavior == "fixed_4_star_once" ? 4 : 3;
                             string paymentName = "星石（免费）";
                             switch (payment.PaymentMethod)
                             {

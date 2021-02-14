@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Rimirin.Framework.Handlers.Interfaces
 {
-    public interface ITimeHandler : IHandler
+    public interface ITimedHandler : IHandler
     {
     }
 }
