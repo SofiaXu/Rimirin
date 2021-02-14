@@ -15,17 +15,22 @@ using System.Threading.Tasks;
 
 namespace Rimirin.Handlers
 {
-    [MessageHandler("^十连$", "邦邦抽卡", "十连", "十连抽当前活动卡池")]
     [MessageHandler("^十连三星必得$", "邦邦抽卡", "十连三星必得", "十连抽当前三星必得卡池")]
-    [MessageHandler("^十连 \\d+$", "邦邦抽卡", "十连 {卡池编号}", "十连抽指定编号卡池，可在bestdori查询编号")]
-    [MessageHandler("^单抽$", "邦邦抽卡", "单抽", "单抽一发当前活动卡池")]
-    [MessageHandler("^当前活动卡池$", "邦邦抽卡", "当前活动卡池", "显示当前活动卡池的信息")]
+    [MessageHandler("^十连(?: (\\d+))?$", "邦邦抽卡", "十连 {卡池编号}",
+        "十连抽指定编号卡池，可在bestdori查询编号，为空则抽当前活动卡池，仅限单抽的池子不可抽取")]
+    [MessageHandler("^单抽(?: (\\d+))?$", "邦邦抽卡", "单抽 {卡池编号}", "单抽指定编号卡池，可在bestdori查询编号，为空则抽当前活动卡池")]
+    [MessageHandler("^(当前)?活动卡池$", "邦邦抽卡", "当前活动卡池", "显示当前活动卡池的信息")]
+    [MessageHandler("^当前卡池|未结束卡池$", "邦邦抽卡", "当前卡池、未结束卡池", "显示未结束卡池的信息")]
+    //[MessageHandler(@"^查询卡池 (?:(?:卡池编号 (?<GachaNumber>\d+))|(?:卡池名称 (?<GachaName>.*))|(?:卡池开始时间 (?<GachaStart>\d{4}年\d{1,2}月\d{1,2}日)))$",
+    //    "邦邦抽卡", "查询卡池 卡池名称 {卡池日语名称}、查询卡池 卡池名称 {卡池编号}、查询卡池 卡池开始时间 {xxxx年xx月xx日}", "查询指定卡池的信息")]
     public class GachaHandler : IHandler, IMessageHandler, IGroupMessageHandler
     {
+        private readonly string[] patterns;
         private readonly GarupaData data;
         private readonly BestdoriClient client;
         private readonly Random randomer = new Random();
         private readonly Dictionary<int, string> stars;
+        private readonly Dictionary<string, string> paymentName;
         private readonly StringBuilder sb = new StringBuilder();
         private readonly ILogger<GachaHandler> logger;
         private readonly GachaImageRender render;
@@ -41,190 +46,227 @@ namespace Rimirin.Handlers
                 { 3, "★3" },
                 { 4, "★4" }
             };
+            patterns = new string[]
+            {
+                "^十连三星必得$",
+                "^十连(?: (\\d+))?$",
+                "^单抽(?: (\\d+))?$",
+                "^(当前)?活动卡池$",
+                "^当前卡池|未结束卡池$",
+                //@"^查询卡池 (?:(?:卡池编号 (?<GachaNumber>\d+))|(?:卡池名称 (?<GachaName>.*))|(?:卡池开始时间 (?<GachaStart>\d{4}年\d{1,2}月\d{1,2}日)))$"
+            };
+            paymentName = new Dictionary<string, string>()
+            {
+                { "free_star", "星石（免费）" },
+                { "paid_star", "星石（付费）" },
+                { "over_the_3_star_ticket", "三星兑换券" },
+                { "normal_ticket", "单次兑换券" },
+                { "free", "免费" }
+            };
             this.logger = logger;
             this.render = render;
         }
         public async Task DoHandle(MiraiHttpSession session, IMessageBase[] chain, IGroupMemberInfo info)
         {
-            List<IMessageBase> result = null;
+            List<IMessageBase> result = new List<IMessageBase>();
             IMessageBase img = null;
             sb.Clear();
             var text = chain.First(m => m.Type == "Plain").ToString();
-            switch (text)
+            var match = patterns.Select((p, i) => (i, Regex.Match(text, p))).First(i => i.Item2.Success);
+            switch (match.i)
             {
-                case "单抽":
+                case 0:
                     {
-                        logger.LogInformation($"{info.Name} 单抽");
-                        var card = GachaSingle();
-                        var message = $"单抽结果: {stars[card.Item2.Rarity]} {data.Characters[card.Item2.CharacterId.ToString()].CharacterName[0]} - {card.Item2.Prefix[0]}";
-                        img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetCardThumbPath(card.Item2.ResourceSetName, card.Item1));
-                        result = new List<IMessageBase>
+                        var gd = data.RecentGachaDetails.LastOrDefault(i => i.Value.GachaName[0] == "★３以上確定チケットガチャ");
+                        List<(string id, Card)> cards = Gacha(gd.Value, gd.Key, true);
+                        result.Add(new PlainMessage(sb.ToString()));
+                        if (cards != null)
                         {
-                            new PlainMessage(message),
-                            img
-                        };
-                        logger.LogInformation(message);
-                        break;
-                    }
-                case "当前活动卡池":
-                    {
-                        GachaDetail gd = GetRecentGachaDetail();
-                        DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.ClosedAt[0])).LocalDateTime;
-                        DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.PublishedAt[0])).LocalDateTime;
-                        sb.AppendLine(gd.GachaName[0]);
-                        sb.AppendLine(gd.Information.NewMemberInfo[0]);
-                        sb.AppendLine($"{startTime} - {endTime}");
-                        img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetGachaBannerImagePath(gd.BannerAssetBundleName));
-                        result = new List<IMessageBase>
-                        {
-                            new PlainMessage(sb.ToString()),
-                            img
-                        };
-                        logger.LogInformation(sb.ToString());
-                        break;
-                    }
-                case "十连":
-                    {
-                        List<(string, Card)> cards = new List<(string, Card)>(10);
-                        for (int i = 0; i < 9; i++)
-                        {
-                            cards.Add(GachaSingle());
-                        }
-                        cards.Add(GachaSingle(tenTimes: true));
-                        using (var s = await render.RenderGachaImageAsync(cards))
-                        {
+                            using var s = await render.RenderGachaImageAsync(cards);
                             img = await session.UploadPictureAsync(UploadTarget.Group, s);
+                            result.Add(img);
                         }
-                        sb.AppendLine("10连结果:");
-                        foreach (var item in cards)
-                        {
-                            sb.AppendLine($"{stars[item.Item2.Rarity]} {data.Characters[item.Item2.CharacterId.ToString()].CharacterName[0]} - {item.Item2.Prefix[0]}");
-                        }
-                        result = new List<IMessageBase>
-                        {
-                            new PlainMessage(sb.ToString()),
-                            img
-                        };
-                        logger.LogInformation(sb.ToString());
                         break;
                     }
-                case "十连三星必得":
+                case 1:
+                case 2:
                     {
-                        List<(string, Card)> cards = new List<(string, Card)>(10);
-                        var gd = data.RecentGachaDetails.LastOrDefault(i => i.Value.GachaName[0] == "★３以上確定チケットガチャ").Value;
-                        for (int i = 0; i < 10; i++)
+                        List<(string id, Card)> cards = null;
+                        if (match.Item2.Groups[1].Success)
                         {
-                            cards.Add(GachaSingle(gd));
+                            var id = match.Item2.Groups[1].Value;
+                            if (!data.Gacha.TryGetValue(id, out _))
+                            {
+                                result.Add(new PlainMessage($"未查询到卡池{id}"));
+                                break;
+                            }
+                            cards = Gacha(await client.GetGacha(id), id, match.i == 1);
                         }
-                        using (var s = await render.RenderGachaImageAsync(cards))
+                        else
                         {
+                            cards = Gacha(tenTimes: match.i == 1);
+                        }
+                        result.Add(new PlainMessage(sb.ToString()));
+                        if (cards != null)
+                        {
+                            using var s = await render.RenderGachaImageAsync(cards);
                             img = await session.UploadPictureAsync(UploadTarget.Group, s);
+                            result.Add(img);
                         }
-                        sb.AppendLine("10连结果:");
-                        foreach (var item in cards)
+                        break;
+                    }
+                case 3:
+                    {
+                        var gd = GetRecentGachaDetail();
+                        DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.Value.ClosedAt[0])).LocalDateTime;
+                        DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.Value.PublishedAt[0])).LocalDateTime;
+                        sb.AppendLine($"卡池编号：{gd.Key}");
+                        sb.AppendLine($"卡池名称：{gd.Value.GachaName[0]}");
+                        if (gd.Value.Information.NewMemberInfo[0] != null)
+                            sb.AppendLine($"新角色介绍：{gd.Value.Information.NewMemberInfo[0]}");
+                        sb.AppendLine($"抽取方式：");
+                        foreach (var payment in gd.Value.PaymentMethods)
                         {
-                            sb.AppendLine($"{stars[item.Item2.Rarity]} {data.Characters[item.Item2.CharacterId.ToString()].CharacterName[0]} - {item.Item2.Prefix[0]}");
+                            if (!this.paymentName.TryGetValue(payment.PaymentMethod, out string paymentName))
+                            {
+                                paymentName = payment.PaymentMethod;
+                            }
+                            sb.AppendLine($"{(payment.CostItemQuantity > 0 ? payment.CostItemQuantity : "")}{paymentName}");
                         }
-                        result = new List<IMessageBase>
+                        sb.AppendLine($"可抽时间：{startTime} - {endTime}");
+                        result.Add(new PlainMessage(sb.ToString()));
+                        if (gd.Value.BannerAssetBundleName != null)
                         {
-                            new PlainMessage(sb.ToString()),
-                            img
-                        };
-                        logger.LogInformation(sb.ToString());
+                            img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetGachaBannerImagePath(gd.Value.BannerAssetBundleName));
+                            result.Add(img);
+                        }
+                        break;
+                    }
+                case 4:
+                    {
+                        string log = "";
+                        foreach (var gd in data.RecentGachaDetails)
+                        {
+                            DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.Value.ClosedAt[0])).LocalDateTime;
+                            DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.Value.PublishedAt[0])).LocalDateTime;
+                            sb.AppendLine($"卡池编号：{gd.Key}");
+                            sb.AppendLine($"卡池名称：{gd.Value.GachaName[0]}");
+                            if (gd.Value.Information.NewMemberInfo[0] != null)
+                                sb.AppendLine($"新角色介绍：{gd.Value.Information.NewMemberInfo[0]}");
+                            sb.AppendLine($"抽取方式：");
+                            foreach (var payment in gd.Value.PaymentMethods)
+                            {
+                                if (!this.paymentName.TryGetValue(payment.PaymentMethod, out string paymentName))
+                                {
+                                    paymentName = payment.PaymentMethod;
+                                }
+                                sb.AppendLine($"{(payment.CostItemQuantity > 0 ? payment.CostItemQuantity : "")}{paymentName}");
+                            }
+                            sb.AppendLine($"可抽时间：{startTime} - {endTime}");                            
+                            result.Add(new PlainMessage(sb.ToString()));
+                            log += sb.ToString();
+                            if (gd.Value.BannerAssetBundleName != null)
+                            {
+                                img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetGachaBannerImagePath(gd.Value.BannerAssetBundleName));
+                                result.Add(img);
+                            }
+                            sb.Clear();
+                        }
+                        sb.Append(log);
                         break;
                     }
                 default:
-                    {
-                        var match = Regex.Match(text, "^十连 (\\d+)$");
-                        if (match.Success)
-                        {
-                            string id = match.Groups[1].Value;
-                            if (!data.Gacha.TryGetValue(id, out Gacha gacha))
-                            {
-                                result = new List<IMessageBase>
-                                {
-                                    new PlainMessage($"未查询到卡池{id}")
-                                };
-                                break;
-                            }
-                            GachaDetail gd = await client.GetGacha(id);
-                            var maxCount = gd.PaymentMethods.Max(p => p.Count);
-                            var payment = gd.PaymentMethods.FirstOrDefault(i => i.Count == maxCount);
-                            if (payment == null)
-                            {
-                                result = new List<IMessageBase>
-                                {
-                                    new PlainMessage($"卡池{id}卡牌不可抽取")
-                                };
-                                break;
-                            }
-                            if (GachaSingle(gd).Item1 == null)
-                            {
-                                result = new List<IMessageBase>
-                                {
-                                    new PlainMessage($"卡池{id}卡牌不可抽取")
-                                };
-                                break;
-                            }
-                            int tenTimesRate = payment.Behavior == "fixed_4_star_once" ? 4 : 3;
-                            string paymentName = "星石（免费）";
-                            switch (payment.PaymentMethod)
-                            {
-                                case "paid_star":
-                                    paymentName = "星石（付费）";
-                                    break;
-                                case "over_the_3_star_ticket":
-                                    paymentName = "三星兑换券";
-                                    break;
-                                case "normal_ticket":
-                                    paymentName = "单次兑换券";
-                                    break;
-                                default:
-                                    break;
-                            }
-                            sb.AppendLine($"卡池名称：{gacha.GachaName[0]}");
-                            sb.AppendLine($"消费：{payment.CostItemQuantity}{paymentName}");
-                            List<(string, Card)> cards = new List<(string, Card)>(10);
-                            for (int i = 0; i < maxCount - 1; i++)
-                            {
-                                cards.Add(GachaSingle(gd));
-                            }
-                            cards.Add(GachaSingle(gd, true, tenTimesRate));
-                            using (var s = await render.RenderGachaImageAsync(cards))
-                            {
-                                img = await session.UploadPictureAsync(UploadTarget.Group, s);
-                            }
-                            if (maxCount == 10)
-                            {
-                                sb.AppendLine("10连结果:");
-                            }
-                            else
-                            {
-                                sb.AppendLine($"{maxCount}连结果:");
-                            }
-                            foreach (var item in cards)
-                            {
-                                sb.AppendLine($"{stars[item.Item2.Rarity]} {data.Characters[item.Item2.CharacterId.ToString()].CharacterName[0]} - {item.Item2.Prefix[0]}");
-                            }
-                            result = new List<IMessageBase>
-                            {
-                                new PlainMessage(sb.ToString()),
-                                img
-                            };
-                            logger.LogInformation(sb.ToString());
-                        }
-                        break;
-                    }
+                    break;
             }
+            logger.LogInformation(sb.ToString());
             await session.SendGroupMessageAsync(info.Group.Id, result.ToArray());
         }
 
-        private (string, Card) GachaSingle(GachaDetail gd = null, bool tenTimes = false, int tenTimesRate = 3)
+        /// <summary>
+        /// 抽卡
+        /// </summary>
+        /// <param name="gd">卡池</param>
+        /// <param name="id">卡池编号</param>
+        /// <param name="tenTimes">是否十连</param>
+        /// <returns>抽中卡组</returns>
+        private List<(string id, Card)> Gacha(GachaDetail gd = null, string id = null, bool tenTimes = false)
         {
             if (gd == null)
             {
-                gd = GetRecentGachaDetail() ?? data.RecentGachaDetails.Last().Value;
+                (id, gd) = GetRecentGachaDetail();
             }
+            List<(string id, Card)> result = new List<(string id, Card)>();
+            var maxCount = 1;
+            if (tenTimes)
+            {
+                maxCount = gd.PaymentMethods.Max(p => p.Count);
+                if (maxCount == 1)
+                {
+                    sb.AppendLine($"卡池{id}不可复数次抽取");
+                    return null;
+                }
+            }
+            if (gd.PaymentMethods == null)
+            {
+                sb.AppendLine($"卡池{id}无可用抽取方式");
+                return null;
+            }
+            var payment = gd.PaymentMethods.FirstOrDefault(i => i.Count == maxCount && (tenTimes || i.PaymentMethod != "paid_star"));
+            if (tenTimes == false && gd.PaymentMethods.Length > 0 && payment == null)
+            {
+                if (!gd.PaymentMethods.Any(i => i.Count == maxCount))
+                {
+                    sb.AppendLine($"卡池{id}不可单次抽取");
+                    return null;
+                }                
+                payment = gd.PaymentMethods.First(i => i.Count == maxCount);
+            }
+            if (payment == null)
+            {
+                sb.AppendLine($"卡池{id}卡牌不可抽取");
+                return null;
+            }
+            if (GachaSingle(gd).Item1 == null)
+            {
+                sb.AppendLine($"卡池{id}卡牌不可抽取");
+                return null;
+            }
+            // 抽取方式所造成的动作 fixed_4_star_once: 四星保底 normal: 正常2星 over_the_3_star_once: 三星保底 once_a_day: 正常2星 
+            int tenTimesRate = payment.Behavior == "fixed_4_star_once" ? 4 : payment.Behavior == "over_the_3_star_once" ? 3 : 2;
+            if (!this.paymentName.TryGetValue(payment.PaymentMethod, out string paymentName))
+            {
+                paymentName = payment.PaymentMethod;
+            }
+            sb.AppendLine($"卡池名称：{gd.GachaName[0]}");
+            sb.AppendLine($"消费：{(payment.CostItemQuantity > 0 ? payment.CostItemQuantity : "")}{paymentName}");
+            for (int i = 0; i < maxCount - 1; i++)
+            {
+                result.Add(GachaSingle(gd));
+            }
+            result.Add(GachaSingle(gd, tenTimesRate));
+            if (maxCount == 1)
+            {
+                sb.AppendLine("单抽结果:");
+            }
+            else
+            {
+                sb.AppendLine($"{maxCount}连结果:");
+            }
+            foreach (var item in result)
+            {
+                sb.AppendLine($"{stars[item.Item2.Rarity]} {data.Characters[item.Item2.CharacterId.ToString()].CharacterName[0]} - {item.Item2.Prefix[0]}");
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 单次抽取（使用加权随机算法）
+        /// </summary>
+        /// <param name="gd">卡池</param>
+        /// <param name="tenTimesRate">保底星数</param>
+        /// <returns>卡片</returns>
+        private (string, Card) GachaSingle(GachaDetail gd, int tenTimesRate = 2)
+        {
             if (gd.Details[0] == null || gd.Rates[0] == null)
             {
                 return (null, null);
@@ -240,8 +282,8 @@ namespace Rimirin.Handlers
             sorted.Add(next);
             sorted.Sort();
             var rate = int.Parse(rates[sorted.IndexOf(next)].Key);
-            // 2. 十连三星保底
-            if (tenTimes == true && rate < tenTimesRate)
+            // 2. 保底
+            if (rate < tenTimesRate)
             {
                 rate = tenTimesRate;
             }
@@ -270,9 +312,9 @@ namespace Rimirin.Handlers
             return (cards[nextIndex].Key, data.Cards[cards[nextIndex].Key]);
         }
 
-        private GachaDetail GetRecentGachaDetail()
+        private KeyValuePair<string, GachaDetail> GetRecentGachaDetail()
         {
-            return data.RecentGachaDetails.FirstOrDefault(i => i.Value.Type == "permanent" || i.Value.Type == "limited").Value;
+            return data.RecentGachaDetails.FirstOrDefault(i => i.Value.Type == "permanent" || i.Value.Type == "limited");
         }
     }
 }
