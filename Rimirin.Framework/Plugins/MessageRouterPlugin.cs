@@ -12,7 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -81,7 +80,6 @@ namespace Rimirin.Framework.Plugins
                 }
                 catch (Exception ex)
                 {
-
                     logger.LogError($"消息处理器{(handler.Key.HandlerName is null ? handler.Value.FullName : handler.Key.HandlerName)}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
                 }
             }
@@ -110,7 +108,6 @@ namespace Rimirin.Framework.Plugins
                 }
                 catch (Exception ex)
                 {
-
                     logger.LogError($"消息处理器{handler.Key.HandlerName ?? handler.Value.FullName}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
                 }
             }
@@ -139,7 +136,6 @@ namespace Rimirin.Framework.Plugins
                 }
                 catch (Exception ex)
                 {
-
                     logger.LogError($"消息处理器{handler.Key.HandlerName ?? handler.Value.FullName}发生未经处理的异常：\n{ex.Message}\n堆栈追踪：\n{ex.StackTrace}");
                 }
             }

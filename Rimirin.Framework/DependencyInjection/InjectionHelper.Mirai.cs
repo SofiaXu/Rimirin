@@ -1,14 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Mirai_CSharp;
 using Mirai_CSharp.Models;
 using Mirai_CSharp.Plugin;
 using Rimirin.Framework.Options;
-using Rimirin.Framework.Plugins;
-using System.Linq;
-using System.Reflection;
 
 namespace Rimirin.Framework.DependencyInjection
 {

@@ -20,22 +20,18 @@ namespace Rimirin
     {
         private readonly ILogger<Worker> _logger;
         private readonly MiraiHttpSession _session;
-        private readonly IOptions<SessionOptions> _SessionOptions;
         private readonly BestdoriClient _client;
         private readonly GarupaData _data;
-        private readonly IServiceProvider _serviceProvider;
         private readonly System.Timers.Timer _timer;
 
         public Worker(ILogger<Worker> logger, MiraiHttpSession session,
-            IOptions<SessionOptions> SessionOptions, GarupaData data,
-            IServiceProvider serviceProvider, BestdoriClient client)
+            GarupaData data,
+            BestdoriClient client)
         {
             _logger = logger;
             _session = session;
-            _SessionOptions = SessionOptions;
             _client = client;
             _data = data;
-            _serviceProvider = serviceProvider;
             _timer = new System.Timers.Timer(TimeSpan.FromMinutes(60).TotalMilliseconds);
         }
 

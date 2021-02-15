@@ -33,6 +33,7 @@ namespace Rimirin.Framework.DependencyInjection
             services.AddSingleton<IPlugin, MessageRouterPlugin>();
             return services;
         }
+
         /// <summary>
         /// 注入自动重新连接器
         /// </summary>

@@ -7,7 +7,6 @@ using Rimirin.Garupa;
 using Rimirin.Models.Garupa;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -21,6 +20,7 @@ namespace Rimirin.Handlers
     [MessageHandler("^单抽(?: (\\d+))?$", "邦邦抽卡", "单抽 {卡池编号}", "单抽指定编号卡池，可在bestdori查询编号，为空则抽当前活动卡池")]
     [MessageHandler("^(当前)?活动卡池$", "邦邦抽卡", "当前活动卡池", "显示当前活动卡池的信息")]
     [MessageHandler("^当前卡池|未结束卡池$", "邦邦抽卡", "当前卡池、未结束卡池", "显示未结束卡池的信息")]
+    [MessageHandler("^未来卡池|未开始卡池$", "邦邦抽卡", "未来卡池、未开始卡池", "显示未开始卡池的信息")]
     //[MessageHandler(@"^查询卡池 (?:(?:卡池编号 (?<GachaNumber>\d+))|(?:卡池名称 (?<GachaName>.*))|(?:卡池开始时间 (?<GachaStart>\d{4}年\d{1,2}月\d{1,2}日)))$",
     //    "邦邦抽卡", "查询卡池 卡池名称 {卡池日语名称}、查询卡池 卡池名称 {卡池编号}、查询卡池 卡池开始时间 {xxxx年xx月xx日}", "查询指定卡池的信息")]
     public class GachaHandler : IHandler, IMessageHandler, IGroupMessageHandler
@@ -53,6 +53,7 @@ namespace Rimirin.Handlers
                 "^单抽(?: (\\d+))?$",
                 "^(当前)?活动卡池$",
                 "^当前卡池|未结束卡池$",
+                "^未来卡池|未开始卡池$",
                 //@"^查询卡池 (?:(?:卡池编号 (?<GachaNumber>\d+))|(?:卡池名称 (?<GachaName>.*))|(?:卡池开始时间 (?<GachaStart>\d{4}年\d{1,2}月\d{1,2}日)))$"
             };
             paymentName = new Dictionary<string, string>()
@@ -149,6 +150,10 @@ namespace Rimirin.Handlers
                         {
                             DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.Value.ClosedAt[0])).LocalDateTime;
                             DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.Value.PublishedAt[0])).LocalDateTime;
+                            if (endTime.Year > (DateTime.Now.Year + 2))
+                            {
+                                continue;
+                            }
                             sb.AppendLine($"卡池编号：{gd.Key}");
                             sb.AppendLine($"卡池名称：{gd.Value.GachaName[0]}");
                             if (gd.Value.Information.NewMemberInfo[0] != null)
@@ -162,13 +167,68 @@ namespace Rimirin.Handlers
                                 }
                                 sb.AppendLine($"{(payment.CostItemQuantity > 0 ? payment.CostItemQuantity : "")}{paymentName}");
                             }
-                            sb.AppendLine($"可抽时间：{startTime} - {endTime}");                            
-                            result.Add(new PlainMessage(sb.ToString()));
+                            sb.AppendLine($"可抽时间：{startTime} - {endTime}");                        
                             log += sb.ToString();
                             if (gd.Value.BannerAssetBundleName != null)
                             {
+                                result.Add(new PlainMessage(sb.ToString()));
                                 img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetGachaBannerImagePath(gd.Value.BannerAssetBundleName));
                                 result.Add(img);
+                            }
+                            else
+                            {
+                                sb.AppendLine("-----------");
+                                result.Add(new PlainMessage(sb.ToString()));
+                            }
+                            sb.Clear();
+                        }
+                        sb.Append(log);
+                        break;
+                    }
+                case 5:
+                    {
+                        string log = "";
+                        var gs = data.Gacha.Where(k => !string.IsNullOrEmpty(k.Value.PublishedAt[0]) && DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(k.Value.PublishedAt[0])).LocalDateTime >= DateTime.Now).ToDictionary(k => k.Key, k => k.Value);
+                        if (gs.Count == 0)
+                        {
+                            sb.Append("未发现未开始卡池");
+                            result.Add(new PlainMessage(sb.ToString()));
+                            break;
+                        }
+                        foreach (var g in gs)
+                        {
+                            var gd = await client.GetGacha(g.Key);
+                            DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.ClosedAt[0])).LocalDateTime;
+                            DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(gd.PublishedAt[0])).LocalDateTime;
+                            if (endTime.Year > (DateTime.Now.Year + 2))
+                            {
+                                continue;
+                            }
+                            sb.AppendLine($"卡池编号：{g.Key}");
+                            sb.AppendLine($"卡池名称：{gd.GachaName[0]}");
+                            if (gd.Information.NewMemberInfo[0] != null)
+                                sb.AppendLine($"新角色介绍：{gd.Information.NewMemberInfo[0]}");
+                            sb.AppendLine($"抽取方式：");
+                            foreach (var payment in gd.PaymentMethods)
+                            {
+                                if (!this.paymentName.TryGetValue(payment.PaymentMethod, out string paymentName))
+                                {
+                                    paymentName = payment.PaymentMethod;
+                                }
+                                sb.AppendLine($"{(payment.CostItemQuantity > 0 ? payment.CostItemQuantity : "")}{paymentName}");
+                            }
+                            sb.AppendLine($"可抽时间：{startTime} - {endTime}");
+                            log += sb.ToString();
+                            if (gd.BannerAssetBundleName != null)
+                            {
+                                result.Add(new PlainMessage(sb.ToString()));
+                                img = await session.UploadPictureAsync(UploadTarget.Group, await client.GetGachaBannerImagePath(gd.BannerAssetBundleName));
+                                result.Add(img);
+                            }
+                            else
+                            {
+                                sb.AppendLine("-----------");
+                                result.Add(new PlainMessage(sb.ToString()));
                             }
                             sb.Clear();
                         }
@@ -179,7 +239,7 @@ namespace Rimirin.Handlers
                     break;
             }
             logger.LogInformation(sb.ToString());
-            await session.SendGroupMessageAsync(info.Group.Id, result.ToArray());
+            await session.SendGroupMessageAsync(groupNumber: info.Group.Id, result.ToArray(), ((SourceMessage)chain.First()).Id);
         }
 
         /// <summary>
