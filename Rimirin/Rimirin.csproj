@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>dotnet-Rimirin-85026B76-48DF-405D-8A0B-EBF61C3B7311</UserSecretsId>
+    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,7 +11,6 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
     <PackageReference Include="Mirai-CSharp" Version="1.0.2.1" />
     <PackageReference Include="SkiaSharp" Version="2.80.2" />
-    <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
   </ItemGroup>
 
   <ItemGroup>

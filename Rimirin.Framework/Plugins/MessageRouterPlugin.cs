@@ -32,7 +32,7 @@ namespace Rimirin.Framework.Plugins
         {
             this.serviceProvider = serviceProvider;
             this.logger = logger;
-            var plugins = options.Value.Handlers.Where(ti => ti.GetInterface("IGroupMessageHandler") != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
+            var plugins = options.Value.Handlers.Where(ti => ti.GetInterface(nameof(IGroupMessageHandler)) != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
             foreach (var plugin in plugins)
             {
                 foreach (MessageHandlerAttribute attribute in Attribute.GetCustomAttributes(plugin, typeof(MessageHandlerAttribute)))
@@ -40,7 +40,7 @@ namespace Rimirin.Framework.Plugins
                     groupHandlers.Add(attribute, plugin);
                 }
             }
-            plugins = options.Value.Handlers.Where(ti => ti.GetInterface("IFriendMessageHandler") != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
+            plugins = options.Value.Handlers.Where(ti => ti.GetInterface(nameof(IFriendMessageHandler)) != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
             foreach (var plugin in plugins)
             {
                 foreach (MessageHandlerAttribute attribute in Attribute.GetCustomAttributes(plugin, typeof(MessageHandlerAttribute)))
@@ -48,7 +48,7 @@ namespace Rimirin.Framework.Plugins
                     friendHandlers.Add(attribute, plugin);
                 }
             }
-            plugins = options.Value.Handlers.Where(ti => ti.GetInterface("ITempMessageHandler") != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
+            plugins = options.Value.Handlers.Where(ti => ti.GetInterface(nameof(ITempMessageHandler)) != null && ti.IsClass == true && ti.IsAbstract == false).ToArray();
             foreach (var plugin in plugins)
             {
                 foreach (MessageHandlerAttribute attribute in Attribute.GetCustomAttributes(plugin, typeof(MessageHandlerAttribute)))

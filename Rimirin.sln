@@ -5,9 +5,15 @@ VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rimirin", "Rimirin\Rimirin.csproj", "{9D3928CD-042C-4769-9AAA-EF2CA7983B3F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rimirin.Framework", "Rimirin.Framework\Rimirin.Framework.csproj", "{15D23E90-94F4-47FB-B71F-D70D55092C9A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rimirin.Framework", "Rimirin.Framework\Rimirin.Framework.csproj", "{15D23E90-94F4-47FB-B71F-D70D55092C9A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rimirin.Bestdori", "Rimirin.Bestdori\Rimirin.Bestdori.csproj", "{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rimirin.Bestdori", "Rimirin.Bestdori\Rimirin.Bestdori.csproj", "{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rimirin.BestdoriTests", "Rimirin.BestdoriTests\Rimirin.BestdoriTests.csproj", "{BF839FDF-86C9-498E-8018-122B65BA87AE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5C1DA567-1E19-4EE1-BBC2-4D83A5D9D54E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{494113A4-F55E-4827-93B7-B02CE73C2A22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,9 +33,19 @@ Global
 		{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF839FDF-86C9-498E-8018-122B65BA87AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF839FDF-86C9-498E-8018-122B65BA87AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF839FDF-86C9-498E-8018-122B65BA87AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF839FDF-86C9-498E-8018-122B65BA87AE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9D3928CD-042C-4769-9AAA-EF2CA7983B3F} = {5C1DA567-1E19-4EE1-BBC2-4D83A5D9D54E}
+		{15D23E90-94F4-47FB-B71F-D70D55092C9A} = {5C1DA567-1E19-4EE1-BBC2-4D83A5D9D54E}
+		{9BC3BC4C-1D1B-4A59-B46D-C95BC745D712} = {5C1DA567-1E19-4EE1-BBC2-4D83A5D9D54E}
+		{BF839FDF-86C9-498E-8018-122B65BA87AE} = {494113A4-F55E-4827-93B7-B02CE73C2A22}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BA6C2485-E76C-4887-8B12-5EFA128B0F61}

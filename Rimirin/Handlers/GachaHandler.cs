@@ -167,7 +167,7 @@ namespace Rimirin.Handlers
                                 }
                                 sb.AppendLine($"{(payment.CostItemQuantity > 0 ? payment.CostItemQuantity : "")}{paymentName}");
                             }
-                            sb.AppendLine($"可抽时间：{startTime} - {endTime}");                        
+                            sb.AppendLine($"可抽时间：{startTime} - {endTime}");
                             log += sb.ToString();
                             if (gd.Value.BannerAssetBundleName != null)
                             {

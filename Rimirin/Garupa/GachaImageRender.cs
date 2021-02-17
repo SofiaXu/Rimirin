@@ -1,6 +1,5 @@
 ﻿using Rimirin.Models.Garupa;
 using SkiaSharp;
-using SkiaSharp.Extended.Svg;
 using System;
 using System.Collections.Generic;
 using System.IO;

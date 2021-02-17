@@ -31,6 +31,7 @@ namespace Rimirin.Framework.Handlers.Announces
         /// <summary>
         /// 用于表示定时处理器的时间间隔的特性。
         /// </summary>
+        /// <param name="runAfterStartup">启动后运行</param>
         /// <param name="interval">执行的时间间隔</param>
         /// <param name="helpText">帮助文本</param>
         /// <param name="handlerName">处理器模块名（在帮助中显示的模块名称，同一个处理器处理不同指令建议使用同一个助记名）</param>
